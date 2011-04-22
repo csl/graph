@@ -1,14 +1,15 @@
 package com.graph;
 
 import java.util.*;
-import java.io.*;	
 
+//Graph for Algorithm
 public class GraphAlgorithm
 {
-	int N; // number of vertices in the graph
+	int N; //number of vertices in the graph
 	boolean[][] G; // the graph as an adjacency matrix
 					// G[i][j] is true if there is an edge from i to j
 
+	//資料結構 for tree
 	TreeMap<String,Integer> node;
 	ArrayList<String> nodelist;
 
@@ -17,6 +18,7 @@ public class GraphAlgorithm
 	
 	GraphAlgorithm(int NodeNum) throws Exception
 	{
+		//初始化資料結構
 		N = NodeNum+1;
 		G = new boolean[N][N];
 		nodelist = new ArrayList<String>();
@@ -34,135 +36,93 @@ public class GraphAlgorithm
 		}
 	}
 	
+	//提供介面讓Main來設有幾個Node
 	void SetNode(String Node, int NodeNum)
 	{
 		nodelist.add(Node);
 		node.put(Node, NodeNum);			
 	}
 	
+	//提供介面讓Main來設Edge
 	void SetEdge(int startNode, int EndNode)
 	{
 		G[startNode][EndNode] = true;
 		G[EndNode][startNode] = true;	
 	}
 	
+	//回傳結果給Main
 	ArrayList<String> getDFSArrayList()
 	{
 		return DFSlist;
 	}
 
+	//回傳結果給Main
 	ArrayList<String> getBFSArrayList()
 	{
 		return BFSlist;
 	}
-	
-	// perform a DFS on the graph G
-	void DFS()
+
+	//實作DFS方法, 透過自己CALL自己方式把路徑
+	int DFS(int at, boolean[] rec_path, int endnode)
 	{
-		boolean[] V=new boolean[N]; // a visited array to mark which vertices have been visited while doing the DFS
-		
-		int numComponets=0; // the number of components in the graph
-		
-		// do the DFS from each node not already visited
-		for (int i=0; i<N; ++i)
-			if (!V[i])
-			{
-				++numComponets;
-				System.out.printf("Starting a DFS for component %d starting at node %s%n",numComponets,nodelist.get(i));
-				
-				DFS(i,V, 0);
-			}
-		
-		System.out.println();
-		System.out.printf("Finished with DFS - found %d components.%n", numComponets);
-	}
-	
-	// perform a DFS starting at node at (works recursively)
-	int DFS(int at, boolean[] V, int endnode)
-	{
-		System.out.printf("At node %s in the DFS%n",nodelist.get(at));
 		DFSlist.add(nodelist.get(at));
 		
-		// mark that we are visiting this node
-		V[at]=true;
+		//標記走過了了
+		rec_path[at]=true;
 		
-		// recursively visit every node connected to this that we have not already visited
 		for (int i=0; i<N; ++i)
 		{
-			if (G[at][i] && !V[i])
+			//Path是不有走過record rec_path array
+			if (G[at][i] && !rec_path[i])
 			{
-				System.out.printf("Going to node %s...",nodelist.get(i));
-				if (DFS(i,V,endnode) == 1) return 1;
+				if (DFS(i,rec_path,endnode) == 1) return 1;
 			}
 		}
 		
-		System.out.printf("Done processing node %s%n", nodelist.get(at));
+		//找到了
 		if (nodelist.get(at).equals(Integer.toString(endnode)))
 		{
 			return 1;
 		}
 		else
 		{
+			//沒找到就remove這條路
 			DFSlist.remove(DFSlist.size()-1);
 		}
 		return 0;
 	}
 	
-	// perform a BFS on the graph G 
-	void BFS()
+	//實作BFS方法
+	void BFS(int start, boolean[] rec_path, int endnode)
 	{
-		boolean[] V=new boolean[N]; // a visited array to mark which vertices have been visited while doing the BFS
+		// 用 queue來處理nodes
+		Queue<Integer> Q=new LinkedList<Integer>();
 		
-		int numComponets=0; // the number of components in the graph
-		
-		// do the BFS from each node not already visited
-		for (int i=0; i<N; ++i)
-			if (!V[i])
-			{
-				++numComponets;
-				System.out.printf("Starting a BFS for component %d starting at node %s%n",numComponets,nodelist.get(i));
-				
-				BFS(i,V,0);
-			}
-		
-		System.out.println();
-		System.out.printf("Finished with BFS - found %d components.%n", numComponets);
-	}
-	
-	// perform a BFS starting at node start
-	void BFS(int start, boolean[] V, int endnode)
-	{
-		Queue<Integer> Q=new LinkedList<Integer>(); // A queue to process nodes
-		
-		// start with only the start node in the queue and mark it as visited
 		Q.offer(start);
-		V[start]=true;
+		rec_path[start]=true;
 				
-		// continue searching the graph while still nodes in the queue
 		while (!Q.isEmpty())
 		{
 			int at=Q.poll(); // get the head of the queue
-			System.out.printf("At node %s in the BFS%n",nodelist.get(at));
 			
-			// add any unseen nodes to the queue to process, then mark them as visited so they don't get re-added
 			for (int i=0; i<N; ++i)
-				if (G[at][i] && !V[i])
+			{
+				//Path是不有走過record rec_path array
+				if (G[at][i] && !rec_path[i])
 				{
 					Q.offer(i);
-					V[i]=true;
-					
-					System.out.printf("Adding node %s to the queue in the BFS%n", nodelist.get(i));
+					//標走過了
+					rec_path[i]=true;
 				}
+			}
 			
-			System.out.printf("Done processing node %s%n", nodelist.get(at));
+			//經過的點記下來
 			BFSlist.add(nodelist.get(at));
 			if (nodelist.get(at).equals(Integer.toString(endnode)))
 			{
 				return;
 			}
 		}
-		
-		System.out.printf("Finished with the BFS from start node %s%n", nodelist.get(start));
 	}
 
 }

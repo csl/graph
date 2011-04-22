@@ -3,33 +3,34 @@ package com.graph;
 import java.awt.*;
 import java.util.*;
 import java.awt.event.*;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
 import javax.swing.*;
+
+import edu.uci.ics.jung.graph.ArchetypeVertex;
+import edu.uci.ics.jung.graph.UndirectedEdge;
+import edu.uci.ics.jung.graph.UndirectedGraph;
+import edu.uci.ics.jung.graph.Vertex;
+import edu.uci.ics.jung.graph.decorators.EdgeShape;
+import edu.uci.ics.jung.graph.decorators.PickableVertexPaintFunction;
+import edu.uci.ics.jung.graph.decorators.StringLabeller;
+import edu.uci.ics.jung.graph.decorators.VertexStringer;
+import edu.uci.ics.jung.graph.impl.UndirectedSparseEdge;
+import edu.uci.ics.jung.graph.impl.UndirectedSparseGraph;
+import edu.uci.ics.jung.graph.impl.UndirectedSparseVertex;
+import edu.uci.ics.jung.visualization.FRLayout;
+import edu.uci.ics.jung.visualization.LayoutMutable;
+import edu.uci.ics.jung.visualization.VisualizationViewer;
+import edu.uci.ics.jung.visualization.PluggableRenderer;
 
 public class Main extends JFrame 
 {
-
+	//Node數
 	int NodeNum = 1;
-	
-	private Main my = this;
 	
 	private GraphAlgorithm GraphaA = null;
 
-	static int CameraTakePictureNumber = 0;
-	static public String IMEI;
-	
-	private boolean [] syncT;
-	public String root_path = "/home/shulong/camera/";
+	private UndirectedGraph undirect_graph;
+	private Vertex[] GNode;
+	private StringLabeller stringLabeller;
 	
 	//Middle
 	protected JPanel jPanelMiddle = null;
@@ -81,37 +82,57 @@ public class Main extends JFrame
 	public Main(int num) 
 	{
 		super();
+		
+		
 		NodeNum = num;
+		
+		//Graph定義	Undirected
+		undirect_graph = new UndirectedSparseGraph();
+		stringLabeller = StringLabeller.getLabeller(undirect_graph);
+		
+		//Vertex定義	GNode
+		GNode = new Vertex[NodeNum+1];
+		
 		try {
+			//建立Vertex
 			GraphaA = new GraphAlgorithm(NodeNum);
 			for (int i=0; i<NodeNum; i++)
 			{
 				GraphaA.SetNode(Integer.toString(i), i);
+				Vertex v = undirect_graph.addVertex(new UndirectedSparseVertex());
+				GNode[i] = v;
+				stringLabeller.setLabel(GNode[i], Integer.toString(i));
 			}
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
 		initialize();
 	}
 
 	
-	public void updateUI() {
+	public void updateUI() 
+	{
 		SwingUtilities.updateComponentTreeUI(this);
 	}
 	
 	public void initialize() 
 	{
+		//初始化資料
 		int _programNum = NodeNum;
 		
 		JTextF = new JTextField[_programNum]; 
 		JSpLabel = new JLabel[_programNum]; 
 		
+		//GUI handler
 		this.setSize(508, 558);
 		this.setContentPane(getJPanelMiddle());
 		this.setTitle("Graph");
 		this.setResizable(false);
 	}
+	
+	//以下為設置GUI的介面
 
 	public JTabbedPane getJTabbedPane() {
 		if (jTabbedPane == null) {
@@ -145,7 +166,7 @@ public class Main extends JFrame
 	
 	private int SetJPanel(final int i, JPanel TabJPanel) 
 	{
-		
+		//建立動態GUI
 		JSpLabel[i] = new JLabel();
 		JSpLabel[i].setText("Edge" + i);
 		JSpLabel[i].setBounds(new Rectangle(0, i*40 + 20, 45, 27));
@@ -222,115 +243,11 @@ public class Main extends JFrame
 			jPanelToolBarBarDetail = new JPanel();
 			jPanelToolBarBarDetail.setLayout(null);
 			jPanelToolBarBarDetail.add(getJButtonOK(), null);
-			jPanelToolBarBarDetail.add(getJButtonTakePicture(), null);
+			jPanelToolBarBarDetail.add(getJButtonClear(), null);
 			jPanelToolBarBarDetail.add(jLabelCameraTotal, null);
 			jPanelToolBarBarDetail.add(jLabelCameraStatus, null);
 		}
 		return jPanelToolBarBarDetail;
-	}
-	
-	public JButton getJButtonOK() 
-	{
-		if (JButtonSync == null) {
-			JButtonSync = new JButton();
-			JButtonSync.setText("OK");
-			JButtonSync.setToolTipText("CreateGraphic");
-			JButtonSync.setBounds(new Rectangle(1, 0, 58, 33));
-			JButtonSync.setMnemonic(java.awt.event.KeyEvent.VK_S);
-			JButtonSync.addActionListener(new java.awt.event.ActionListener() {
-				public void actionPerformed(java.awt.event.ActionEvent ae) 
-				{
-					String edge_str;
-					String Node;
-					int iStartNode = 0;
-					int iEndNodde = NodeNum + 1;
-					
-					//fetch data
-					for (int i=0; i<NodeNum; i++)
-					{
-						edge_str = JTextF[i].getText();
-						
-						if (!edge_str.equals(""))
-						{
-							StringTokenizer Tok = new StringTokenizer(edge_str, ",");
-	
-							while (Tok.hasMoreElements())
-							{
-								int edge_node = Integer.parseInt((String) Tok.nextElement());
-								GraphaA.SetEdge(i, edge_node);
-							}
-						}
-					}
-					
-					String message = "";
-					//get start node 
-					while (iEndNodde > NodeNum-1)
-					{
-						Node = JOptionPane.showInputDialog(null,
-								message + "請選擇欲搜尋的頂點編號?",
-								  "建立Graph圖片",
-								  JOptionPane.QUESTION_MESSAGE);
-						iEndNodde = Integer.parseInt(Node);
-						message = "找不到這個頂點, ";
-					}
-					
-					boolean[] G = new boolean[NodeNum + 1];
-					for (int i=0; i<NodeNum + 1; i++)
-					{
-							G[i] = false;
-					}					
-					
-					GraphaA.DFS(iStartNode, G, iEndNodde);
-
-					for (int i=0; i<NodeNum + 1; i++)
-					{
-							G[i] = false;
-					}					
-
-					GraphaA.BFS(iStartNode, G, iEndNodde);
-					
-					ArrayList<String> dfslist = GraphaA.getDFSArrayList();
-					jLabelDFSDisplay.setText("DFS: " + dfslist);
-
-					ArrayList<String> bfslist = GraphaA.getBFSArrayList();
-					jLabelBFSDisplay.setText("BFS: " + bfslist);
-					jTabbedPane.setSelectedIndex(1);
-					//JOptionPane.showMessageDialog(null, "OK", "message", JOptionPane.INFORMATION_MESSAGE);
-				}
-			});
-		}
-		return JButtonSync;
-	}
-	
-	private JButton getJButtonTakePicture() 
-	{
-		if (JButtonTakePicture == null) {
-			JButtonTakePicture = new JButton();
-			JButtonTakePicture.setBounds(new Rectangle(70, 0, 65, 33));
-			JButtonTakePicture.setMnemonic(KeyEvent.VK_R);
-			JButtonTakePicture.setText("Clear");
-			JButtonTakePicture.setToolTipText("Clear");
-			JButtonTakePicture
-					.addActionListener(new java.awt.event.ActionListener() {
-						public void actionPerformed(java.awt.event.ActionEvent e) 
-						{
-							jLabelDFSDisplay.setText("DFS: test");
-							jLabelBFSDisplay.setText("BFS: test");
-										
-						}
-					});
-			JButtonTakePicture.setMnemonic(java.awt.event.KeyEvent.VK_R);
-		}
-		return JButtonTakePicture;
-	}
-
-	public JPanel getJPanelTabGraphic() {
-		if (jPanelGraphicTabContext == null) {
-			jPanelGraphicTabContext = new JPanel();
-			jPanelGraphicTabContext.setLayout(null);
-			jPanelGraphicTabContext.add(getJPanelGraphicTabContext(), null);
-		}
-		return jPanelGraphicTabContext;
 	}
 	
 	public JPanel getJPanelGraphicTabContext() {
@@ -346,7 +263,7 @@ public class Main extends JFrame
 	
 	private int SetDisplayJPanel(JPanel TabJPanel) 
 	{
-		
+		//設定DFS/BFS顯示Label
 		jLabelDFSDisplay = new JLabel();
 		jLabelDFSDisplay.setBounds(new Rectangle(0, 20, 180, 27));
 		
@@ -371,16 +288,160 @@ public class Main extends JFrame
 		}
 		return jPanelGraphicTab;
 	}
+	
+	//以上為設置GUI的介面
+	
+	public JButton getJButtonOK() 
+	{
+		if (JButtonSync == null) {
+			JButtonSync = new JButton();
+			JButtonSync.setText("OK");
+			JButtonSync.setToolTipText("CreateGraphic");
+			JButtonSync.setBounds(new Rectangle(1, 0, 58, 33));
+			JButtonSync.setMnemonic(java.awt.event.KeyEvent.VK_S);
+			JButtonSync.addActionListener(new java.awt.event.ActionListener() {
+				public void actionPerformed(java.awt.event.ActionEvent ae) 
+				{
+					//按下OK之後開始執行
+					
+					String edge_str;
+					String Node;
+					int iStartNode = 0;
+					int iEndNodde = NodeNum + 1;
+					
+					//抓取EDGE相關資料,並放入undirect_graph中
+					for (int i=0; i<NodeNum; i++)
+					{
+						edge_str = JTextF[i].getText();
+						
+						if (!edge_str.equals(""))
+						{
+							StringTokenizer Tok = new StringTokenizer(edge_str, ",");
+	
+							while (Tok.hasMoreElements())
+							{
+								int edge_node = Integer.parseInt((String) Tok.nextElement());
+								GraphaA.SetEdge(i, edge_node);
+								UndirectedEdge cc = (UndirectedEdge) undirect_graph.addEdge(new UndirectedSparseEdge(GNode[i], GNode[edge_node]));
+							}
+						}
+					}
+					
+					String message = "";
+					//抓取欲搜尋的頂點編號
+					while (iEndNodde > NodeNum-1)
+					{
+						Node = JOptionPane.showInputDialog(null,
+								message + "請選擇欲搜尋的頂點編號",
+								  "建立Graph圖片",
+								  JOptionPane.QUESTION_MESSAGE);
+						iEndNodde = Integer.parseInt(Node);
+						message = "找不到這個頂點, ";
+					}
+					
+					boolean[] G = new boolean[NodeNum + 1];
+					for (int i=0; i<NodeNum + 1; i++)
+					{
+							G[i] = false;
+					}					
+					
+					//Graphic: DFS method
+					GraphaA.DFS(iStartNode, G, iEndNodde);
 
+					for (int i=0; i<NodeNum + 1; i++)
+					{
+							G[i] = false;
+					}					
+
+					//Graphic: BFS method
+					GraphaA.BFS(iStartNode, G, iEndNodde);
+					
+					
+					//顯示結果
+					ArrayList<String> dfslist = GraphaA.getDFSArrayList();
+					jLabelDFSDisplay.setText("DFS: " + dfslist);
+
+					ArrayList<String> bfslist = GraphaA.getBFSArrayList();
+					jLabelBFSDisplay.setText("BFS: " + bfslist);
+					jTabbedPane.setSelectedIndex(1);
+					//JOptionPane.showMessageDialog(null, "OK", "message", JOptionPane.INFORMATION_MESSAGE);
+
+					//畫出Graphic圖形
+					LayoutMutable  layout = new FRLayout( undirect_graph );
+					//layout.setSize(new Dimension(650,650));
+					PluggableRenderer r = new PluggableRenderer();
+			        r.setEdgeShapeFunction(new EdgeShape.Line());
+			        r.setVertexPaintFunction(new PickableVertexPaintFunction(r, 
+			                Color.black, Color.decode("0xe6e8fa"), Color.decode("0xcd7f32")));
+
+			        //VertexFont vFont = new VertexFont();
+			        //r.setVertexFontFunction(vFont);
+					r.setVertexLabelCentering(true);
+			        r.setVertexStringer(new VertexStringer() {
+			            @Override
+			            public String getLabel(ArchetypeVertex v) 
+			            {
+			                return stringLabeller.getLabel(v);
+			            }
+			        });
+			        
+			        layout.advancePositions();
+					VisualizationViewer vv = new VisualizationViewer( layout, r );
+					vv.setPreferredSize(new Dimension(320,200));
+					
+					JFrame jf = new JFrame();
+					jf.getContentPane().add ( vv, BorderLayout.CENTER );
+					jf.setTitle("Draw Graph");
+					jf.setSize(800,600);
+					jf.setVisible(true);
+					
+					JButtonSync.setEnabled(false);
+				}
+			});
+		}
+		return JButtonSync;
+	}
+	
+	private JButton getJButtonClear() 
+	{
+		if (JButtonTakePicture == null) {
+			JButtonTakePicture = new JButton();
+			JButtonTakePicture.setBounds(new Rectangle(70, 0, 65, 33));
+			JButtonTakePicture.setMnemonic(KeyEvent.VK_R);
+			JButtonTakePicture.setText("Exit");
+			JButtonTakePicture.setToolTipText("Exit");
+			JButtonTakePicture
+					.addActionListener(new java.awt.event.ActionListener() {
+						public void actionPerformed(java.awt.event.ActionEvent e) 
+						{
+							System.exit(0);
+						}
+					});
+			JButtonTakePicture.setMnemonic(java.awt.event.KeyEvent.VK_R);
+		}
+		return JButtonTakePicture;
+	}
+
+	public JPanel getJPanelTabGraphic() {
+		if (jPanelGraphicTabContext == null) {
+			jPanelGraphicTabContext = new JPanel();
+			jPanelGraphicTabContext.setLayout(null);
+			jPanelGraphicTabContext.add(getJPanelGraphicTabContext(), null);
+		}
+		return jPanelGraphicTabContext;
+	}
+	
 	public static void main(String[] args) 
 	{
 		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
        
+		//輸入node數
 		String nodes = JOptionPane.showInputDialog(null,
 				  "請選擇欲搜尋的頂點編號",
 				  "建立Graph",
 				  JOptionPane.QUESTION_MESSAGE);
       
+		//建立GUI介面
 		Main app = new Main(Integer.parseInt(nodes));
 		app.addWindowListener(new java.awt.event.WindowAdapter() {
 			public void windowClosing(java.awt.event.WindowEvent evt) {
@@ -388,6 +449,7 @@ public class Main extends JFrame
 			}
 		});
 		
+		//GUI大小設定
 		Dimension frameSize = app.getSize();
 		if (frameSize.height > screenSize.height) {
 			frameSize.height = screenSize.height;

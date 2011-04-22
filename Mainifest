@@ -1,3 +1,4 @@
 Manifest-Version: 1.0
-Main-Class: com.camera.Main
+Main-Class: com.graph.Main
+Class-Path: libs/collections-generic-4.01.jar libs/colt-1.2.0.jar libs/commons-collections-3.1.jar libs/jung-1.7.6.jar
 
